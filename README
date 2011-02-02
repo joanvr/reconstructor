@@ -1,0 +1,47 @@
+Our project is divided in three applications:
+	
+	CSCLI: command line version of the reconstructor
+	CSGUI: graphic interface version of the reconstructor
+	CSGEN: utility to create holes to ppm files
+
+The usage of the programs is:
+
+./CSGEN inputName sampleRatio
+	inputName: image file to erase pixels from
+	sampleRatio: how many pixels will be kept
+
+	The output has two files: 
+	  - the image with some pixels missing
+	  - the decision matrix for this image
+	
+	Example:
+		./CSGEN lena.ppm 0.6  
+		Output: 	lenaH60.ppm 	lenaH60.txt
+	
+./CSCLI inputFile sigmaLambda blockSize transform [rgb/yuv] [nthreads]
+	inputFile: name of the ppm image file. We assume that the decision
+			   matrix is located in the same directory and has the same
+			   name but with .txt extension.
+	sigmaLambda: tolerance measure. A double, typically less than 1.0
+	blockSize: 16 or 32
+	transform:  0 - random ones
+				1 - random sqrt(3)
+				2 - discrete cosine
+				3 - daubechies 8
+				4 - cdf 9/7
+	rgb/yuv: optional. Assumed rgb as default.
+	nthreads: optinal. Assumed 4 threads as default.
+
+	The output has three files:
+	    0-original.ppm
+			the read image with missing data (for test purposes)
+		1-transformed.ppm
+			the transformed image that we obtain as Gurobi's solution.
+		2-reconstructed.ppm
+			the recovered good image, the inverse transform of the previous.
+
+./CSGUI
+	It has no inputs, as all parameters are set through a Qt interface.
+	The output is the same as CLI version.
+
+
