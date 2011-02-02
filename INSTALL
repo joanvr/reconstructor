@@ -1,0 +1,24 @@
+The following libraries are required to compile the project:
+
+	- Gurobi 4.0.0: we have only tried 32 bits library
+	- pthreads: required by Gurobi
+	- Qt 4.7 
+	  * It works with other versions of Qt 4, but version 4.7 changed some
+	    behaviour of timers and threads. As a consequence, program CSGUI 
+		crashes using older versions when all threads die, saying the timer 
+		we use to count the elapsed time cannot be stopped from another
+		thread (but it actually is from the same thread).
+		However, as the image is saved before stopping the timer, we think
+		this is only a "minor bug".
+
+Then, just execute from the root folder (the one that contains 'cs.pro')
+	qmake
+	make
+
+If everything is ok, the result will be three programs:
+	CSCLI: command line version of the reconstructor
+	CSGUI: graphic interface version of the reconstructor
+	GEN:   utility to create holes to ppm files
+
+
+	
