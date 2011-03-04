@@ -1,7 +1,7 @@
 #ifndef RECONSTRUCTORLISTENER_H
 #define RECONSTRUCTORLISTENER_H
 
-#include "Matrix.h"
+#include "datatypes.h"
 
 class ReconstructorListener {
 public:

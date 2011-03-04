@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < Y.getHeight(); i++) {
             for (int j = 0; j < Y.getWidth(); j++) {
                 if (samples[i][j]) {
-                    S[i][j] = 1.0f;
+                    S.insert_element(i, j, 1.0);
                 }
                 else {
-                    S[i][j] = 0.0f;
+                    S.insert_element(i, j, 0.0);
                 }
             }
         }

@@ -3,7 +3,7 @@
 
 #include <string>
 #include "Image.h"
-#include "Matrix.h"
+#include "datatypes.h"
 #include "ReconstructorListener.h"
 
 enum Transform {RANDOM1, RANDOMSQRT3, DCT, DAUBECHIES8, CDF};
@@ -19,7 +19,6 @@ public:
 
     void setTransform(int transform);
     void setBlockSize(int blockSize);
-    void setSigmaLambda(double sigmaLambda);
     void setColorSpace(bool yuv);
     void setNThreads(int nthreads);
 
@@ -31,7 +30,6 @@ public:
     int blockSize;
 	int blockMask;
 	int blockBits;
-    double sigmaLambda;
     bool running;
     bool yuv;
     Image Y;
@@ -67,10 +65,6 @@ inline void Reconstructor::setBlockSize(int bs) {
 		blockBits++;
 		bs = bs >> 1;
 	}
-}
-
-inline void Reconstructor::setSigmaLambda(double sl) {
-    sigmaLambda = sl;
 }
 
 inline void Reconstructor::setColorSpace(bool b) {

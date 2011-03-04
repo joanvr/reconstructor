@@ -1,4 +1,4 @@
-#include "Matrix.h"
+#include "datatypes.h"
 
 int input_matrix (const char* filename, Matrix &R, Matrix &G, Matrix &B, bool yuv);
 bool input_samples(const char* filename, Matrix &S);

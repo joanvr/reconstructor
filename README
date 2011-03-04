@@ -18,11 +18,10 @@ The usage of the programs is:
 		./CSGEN lena.ppm 0.6  
 		Output: 	lenaH60.ppm 	lenaH60.txt
 	
-./CSCLI inputFile sigmaLambda blockSize transform [rgb/yuv] [nthreads]
+./CSCLI inputFile blockSize transform [rgb/yuv] [nthreads]
 	inputFile: name of the ppm image file. We assume that the decision
 			   matrix is located in the same directory and has the same
 			   name but with .txt extension.
-	sigmaLambda: tolerance measure. A double, typically less than 1.0
 	blockSize: 16 or 32
 	transform:  0 - random ones
 				1 - random sqrt(3)

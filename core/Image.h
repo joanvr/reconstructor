@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "Matrix.h"
+#include "datatypes.h"
 #include "io.h"
 
 #define IMAGE_NOT_FOUND   -1
@@ -50,11 +50,11 @@ private:
 };
 
 inline int Image::getWidth()  { 
-	return m_R.getCols(); 
+	return m_R.size2(); 
 }
 
 inline int Image::getHeight() {
-	return m_R.getRows();
+	return m_R.size1();
 }
 
 inline void Image::resetNextBlock() {
@@ -66,9 +66,9 @@ inline int Image::getMaxIntensity() {
 }
 
 inline void Image::setPixel(int x, int y, double r, double g, double b) {
-	m_R[y][x] = r;
-	m_G[y][x] = g;
-	m_B[y][x] = b;
+    m_R.insert_element(y, x, r);
+    m_G.insert_element(y, x, g);
+    m_B.insert_element(y, x, b);
 }
 
 #endif

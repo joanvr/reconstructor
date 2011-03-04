@@ -8,24 +8,17 @@ OBJECTS_DIR = ../build
 SOURCES += gui.cpp \
     widget.cpp \
     ../core/Transforms.cpp \
-    ../core/Matrix.cpp \
     ../core/io.cpp \
     ../core/Image.cpp \
-    ../core/Dantzig.cpp \
     ../core/Reconstructor.cpp
 HEADERS += widget.h \
     ../core/Transforms.h \
-    ../core/Matrix.h \
+    ../core/datatypes.h \
     ../core/io.h \
     ../core/Image.h \
-    ../core/Dantzig.h \
+    ../core/Fista.h \
     ../core/Reconstructor.h \
-    ../core/ReconstructorListener.h \
-    ../core/gurobi_c++.h \
-    ../core/gurobi_c.h
+    ../core/ReconstructorListener.h 
 FORMS += widget.ui
-LIBS += -L$(GUROBI_HOME)/lib/ \
-    -lgurobi_c++ \
-    -lgurobi40 \
-    -lpthread \
+LIBS += -lpthread \
     -lm

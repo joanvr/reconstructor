@@ -66,9 +66,9 @@ void Widget::blockCompleted(int block, const Matrix &R, const Matrix &G, const M
         for (int j = 0; j < m_r.blockSize; j++) {
             unsigned int ir, ig, ib;
             if (m_r.yuv) {
-                double Y = R.get(i, j);
-                double V = G.get(i, j);
-                double U = B.get(i, j);
+                double Y = R(i, j);
+                double V = G(i, j);
+                double U = B(i, j);
 
                 ib = 1.164*(Y - 16) + 2.018*(U - 128);
                 ig = 1.164*(Y - 16) - 0.813*(V - 128) - 0.391*(U - 128);
@@ -76,9 +76,9 @@ void Widget::blockCompleted(int block, const Matrix &R, const Matrix &G, const M
 
             }
             else {
-                ir = R.get(i, j);
-                ig = G.get(i, j);
-                ib = B.get(i, j);
+                ir = R(i, j);
+                ig = G(i, j);
+                ib = B(i, j);
             }
             uint rgb = (ir<<16) | (ig<<8) | (ib);
             m_image.setPixel(c+j, r+i, rgb);
@@ -167,7 +167,7 @@ void Widget::on_startButton_clicked() {
             m_r.setBlockSize(32);
         break;
     }
-    m_r.setSigmaLambda(m_sigmaLambda);
+//    m_r.setSigmaLambda(m_sigmaLambda);
     m_r.setColorSpace(!m_colorSpace);
     m_r.setNThreads(m_nthreads);
 

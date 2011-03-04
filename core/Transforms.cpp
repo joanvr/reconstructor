@@ -9,12 +9,12 @@ void getRandomOnes(Matrix& M, int seed) {
 	
 	srand(seed);
 
-	int n = M.getCols();	
+	int n = M.size2();	
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			int r = rand()%2;
 			r = r*2-1;
-			M[i][j] = r/sqrt(n);
+			M.insert_element(i, j, r/sqrt(n));
 		}
 	}
 
@@ -25,20 +25,20 @@ void getRandomZeroOnes(Matrix& M, int seed) {
 
 	srand(seed);
 
-	int n = M.getCols();	
+	int n = M.size2();	
 	for (int i = 0; i < n; i++) {
 		double t = 0.0;
 		for (int j = 0; j < n; j++) {
 			int r = rand()%6;
-			if (r == 0)      M[i][j] =  sqrt(3);
-			else if (r == 1) M[i][j] = -sqrt(3);
-			else 			 M[i][j] = 0;
-			t += M[i][j]*M[i][j];
+			if (r == 0)      M.insert_element(i, j,  sqrt(3));
+			else if (r == 1) M.insert_element(i, j, -sqrt(3));
+			else 		 M.insert_element(i, j, 0);
+			t += M(i,j)*M(j,i);
 		}
 		if (t > 0) {
 			t = sqrt(t);
 			for (int j = 0; j < n; j++) {
-				M[i][j] /= t;
+                            M.insert_element(i, j, M(i,j) / t);
 			}
 		}
 	}
@@ -57,12 +57,12 @@ void getTransformFromFile(Matrix& M, const char* name, int blockSize) {
         return;
 	}
 
-	int n = M.getCols();
+	int n = M.size2();
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			double d;
 			f >> d;
-			M[i][j] = d;
+			M.insert_element(i, j, d);
 		}
 	}
 

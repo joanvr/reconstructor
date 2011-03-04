@@ -1,7 +1,7 @@
 #include "Image.h"
 #include <string>
 
-#include "Matrix.h"
+#include "datatypes.h"
 #include "io.h"
 
 Image::Image() {
@@ -50,12 +50,12 @@ Image::~Image() {
 
 void Image::setBlockSize(int size) {
     m_blockSize = size;
-    m_colsBlocks = m_R.getCols() / m_blockSize;
-    m_maxBlocks = m_colsBlocks * (m_R.getRows() / m_blockSize);
+    m_colsBlocks = m_R.size2() / m_blockSize;
+    m_maxBlocks = m_colsBlocks * (m_R.size1() / m_blockSize);
 }
 
 bool Image::save(std::string name, bool yuv) {
-	std::string imgname = name + ".ppm";
+    std::string imgname = name + ".ppm";
 	return output_matrix(imgname.c_str(), m_R, m_G, m_B, m_maxIntensity, yuv);
 }
 
@@ -70,27 +70,27 @@ int Image::getNextBlock(Matrix& R, Matrix& G, Matrix& B, std::vector<int>& S) {
 	int k = 0;
     for (int i = 0; i < m_blockSize; i++) {
         for (int j = 0; j < m_blockSize; j++) {
-			if (m_S[r+i][c+j]) {
-				R[i][j] = m_R[r+i][c+j];
-				G[i][j] = m_G[r+i][c+j];
-				B[i][j] = m_B[r+i][c+j];
-				k++;
-			}
-		}
-	}
-
-	S.clear();
+            if (m_S(r+i, c+j)) {
+                R.insert_element(i, j, m_R(r+i, c+j));
+                G.insert_element(i, j, m_G(r+i, c+j));
+                B.insert_element(i, j, m_B(r+i, c+j));
+                k++;
+            }
+        }
+    }
+    
+    S.clear();
     S = std::vector<int>(k); 
-	k = 0;
+    k = 0;
     for (int i = 0; i < m_blockSize; i++) {
         for (int j = 0; j < m_blockSize; j++) {
-			if (m_S[r+i][c+j]) {
+            if (m_S(r+i, c+j)) {
                 S[k] = i*m_blockSize + j;
-				k++;
-			}
-		}
-	}
-	return n;
+                k++;
+            }
+        }
+    }
+    return n;
 }
 
 void Image::setBlock(int block, const Matrix& R, 
@@ -99,14 +99,14 @@ void Image::setBlock(int block, const Matrix& R,
 {
     int r = (block / m_colsBlocks) * m_blockSize;
     int c = (block % m_colsBlocks) * m_blockSize;
-	
+    
     for (int i = 0; i < m_blockSize; i++) {
         for (int j = 0; j < m_blockSize; j++) {
-			m_R[r+i][c+j] = R.get(i, j);
-			m_G[r+i][c+j] = G.get(i, j);
-			m_B[r+i][c+j] = B.get(i, j);
-		}
-	}
-
+            m_R.insert_element(r+i, c+j, R(i, j));
+            m_G.insert_element(r+i, c+j, G(i, j));
+            m_B.insert_element(r+i, c+j, B(i, j));
+        }
+    }
+    
 }
 

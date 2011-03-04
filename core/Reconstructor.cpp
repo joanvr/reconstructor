@@ -1,25 +1,89 @@
 #include <iostream>
+#include "datatypes.h"
 #include "Reconstructor.h"
-#include "gurobi_c++.h"
 #include "Transforms.h"
-#include "Dantzig.h"
+#include "Fista.h"
+
 using namespace std;
 
 #define LIMIT 4
+#define SOLVER_ITER_LIMIT 500
+#define SOLVER_EPS .001
+#define SOLVER_TOL .001
 
 Reconstructor::Reconstructor() {
     m_transform = DCT;
     blockSize = 16;
 	blockMask = 15;
 	blockBits = 4;
-    sigmaLambda = 0.01;
     yuv = false;
     m_nthreads = 4;
 	listener = NULL;
 }
 
-Reconstructor::~Reconstructor() {
+Reconstructor::~Reconstructor() {}
 
+void solve(EllOneSolver& ellonesolver, const Vector& bC, char cC, int block, Vector& RecC) {
+    bool sol = false;
+    int iter = 0;
+    while (!sol && iter < LIMIT) {
+        if (iter != 0)
+            cerr << "*** Retrying BLOCK " << block
+                 << " component " << cC << " (" << iter << ")" << endl;
+        sol = ellonesolver.optimize(bC, RecC);
+        iter++;
+    }
+}
+
+void make_sampled_image (int k, int blockBits, int blockMask, Vector& bR, Vector& bG, Vector& bB, const Matrix& YR, const Matrix& YG, const Matrix& YB, const std::vector<int>& S) {
+    for (int i = 0; i < k; i++) {
+        const int j = S[i];
+        bR.insert_element(i, YR(j >> blockBits, j & blockMask));
+        bG.insert_element(i, YG(j >> blockBits, j & blockMask));
+        bB.insert_element(i, YB(j >> blockBits, j & blockMask));
+    }
+}
+
+void put_back(int blockSize, int blockBits, const Vector& RecR, const Vector& RecG, const Vector& RecB, Matrix& YR, Matrix& YG, Matrix& YB) {
+    for (int i = 0; i < blockSize; i++) {
+        for (int j = 0; j < blockSize; j++) {
+            YR.insert_element(i, j, RecR[(i << blockBits) + j]);
+            YG.insert_element(i, j, RecG[(i << blockBits) + j]);
+            YB.insert_element(i, j, RecB[(i << blockBits) + j]);
+        }
+    }
+}
+
+void make_A (int n, int k, const std::vector<int>& S, Matrix& A, const Matrix& Psinv) {
+    int ii;
+    for (ii = 0; ii < k; ii++) {
+        const int row = S[ii];
+        for (int j = 0; j < n; j++) {
+            A.insert_element(ii, j, Psinv(row, j));
+        }
+    }
+    // Finish with 0
+    for (; ii < n; ii++) {
+        for (int j = 0; j < n; j++) {
+            A.insert_element(ii, j, 0);
+        }
+    }
+}
+
+void make_Ys (int n, int blockBits, int blockMask, const Matrix& Psinv, const Vector& RecR, const Vector& RecG, const Vector& RecB, Matrix& YR, Matrix& YG, Matrix& YB ) {
+    for (int i = 0; i < n; i++) {
+        int row = i >> blockBits;
+        int col = i &  blockMask;
+        number_t cr(0.0), cg(0.0), cb(0.0);
+        for (int j = 0; j < n; j++) {
+            cr += Psinv(i,j)*RecR[j];
+            cg += Psinv(i,j)*RecG[j];
+            cb += Psinv(i,j)*RecB[j];
+        }
+        YR.insert_element(row, col, floor(cr));
+        YG.insert_element(row, col, floor(cg));
+        YB.insert_element(row, col, floor(cb));
+    }
 }
 
 void* calcBlocks(void* v) {
@@ -29,129 +93,50 @@ void* calcBlocks(void* v) {
     int blockSize = r->blockSize;
     int blockMask = r->blockMask;
     int blockBits = r->blockBits;
-    double sigmaLambda = r->sigmaLambda;
     Matrix YR(blockSize, blockSize);
     Matrix YG(blockSize, blockSize);
     Matrix YB(blockSize, blockSize);
     std::vector<int> S;
 
-    int n = blockSize*blockSize;
-    double* RecR = new double[n];
-    double* RecG = new double[n];
-    double* RecB = new double[n];
-    double* bR = new double[n]; // k
-    double* bG = new double[n]; // k
-    double* bB = new double[n]; // k
-    
+    const int n = blockSize*blockSize;
+    Vector 
+        RecR(n), 
+        RecG(n),
+        RecB(n),
+        bR(n),
+        bG(n),
+        bB(n);    
     Matrix A(n, n);
-    cerr << "Initializing model" << endl;
-    DantzigSelector dantzig;
-	dantzig.init(n);
-    cerr << "Init completed" << endl;
-	
-	while (r->running && (block = r->Y.getNextBlock(YR, YG, YB, S)) >= 0) {
+    
+    while (r->running && (block = r->Y.getNextBlock(YR, YG, YB, S)) >= 0) {
         cerr << "*** Starting BLOCK " << block << endl;
-		int k = S.size();
-
+        const int k = S.size();
+        
         // Imatge samplejada
-        for (int i = 0; i < k; i++) {
-			int j = S[i];
-            bR[i] = YR[j >> blockBits][j & blockMask];
-            bG[i] = YG[j >> blockBits][j & blockMask];
-            bB[i] = YB[j >> blockBits][j & blockMask];
-        }
+        make_sampled_image(k, blockBits, blockMask, bR, bG, bB, YR, YG, YB, S);
 
         // Matriu per a la resolucio del CS
-		int ii;
-        for (ii = 0; ii < k; ii++) {
-			float* tpi = r->Psinv[S[ii]];
-			for (int j = 0; j < n; j++) {
-				A[ii][j] = tpi[j];
-			}
-		}
-		// Finish with 0
-		for (; ii < n; ii++) {
-			for (int j = 0; j < n; j++) {
-				A[ii][j] = 0;
-			}
-		}
+        make_A(n, k, S, A, r->Psinv);
 
-        // Reconstrucio del CS amb Dantzig Selector
-    	cerr << "Setting coefficients" << endl;
-		dantzig.setCoeffs(A, k);
-    	cerr << "Setting coefficients completed" << endl;
-
-        bool sol = false;
-        int iter = 0;
-        while (!sol && iter < LIMIT) {
-            if (iter != 0)
-                cerr << "*** Retrying BLOCK " << block
-                            << " component R (" << iter << ")" << endl;
-            sol = dantzig.solve(A, bR, sigmaLambda, RecR);
-            iter++;
-        }
-
-        sol = false;
-        iter = 0;
-        while (!sol && iter < LIMIT) {
-            if (iter != 0)
-                cerr << "*** Retrying BLOCK " << block
-                            << " component G (" << iter << ")" << endl;
-            sol = dantzig.solve(A, bG, sigmaLambda, RecG);
-            iter++;
-        }
-
-        sol = false;
-        iter = 0;
-        while (!sol && iter < LIMIT) {
-            if (iter != 0)
-                cerr << "*** Retrying BLOCK " << block
-                            << " component B (" << iter << ")" << endl;
-            sol = dantzig.solve(A, bB, sigmaLambda, RecB);
-            iter++;
-        }
+        EllOneSolver ellonesolver(A, SOLVER_ITER_LIMIT, SOLVER_EPS, SOLVER_TOL);
+        solve(ellonesolver, bR, 'R', block, RecR);
+        solve(ellonesolver, bG, 'G', block, RecG);
+        solve(ellonesolver, bB, 'B', block, RecB);
 
         // Put Reconstruction back to Image Block
-        for (int i = 0; i < blockSize; i++) {
-            for (int j = 0; j < blockSize; j++) {
-                YR[i][j] = RecR[(i << blockBits) + j];
-                YG[i][j] = RecG[(i << blockBits) + j];
-                YB[i][j] = RecB[(i << blockBits) + j];
-            }
-        }
+        put_back(blockSize, blockBits, RecR, RecG, RecB, YR, YG, YB);
+
         r->T.setBlock(block, YR, YG, YB);
 
-        for (int i = 0; i < n; i++) {
-            int row = i >> blockBits;
-            int col = i &  blockMask;
-            YR[row][col] = 0.0;
-            YG[row][col] = 0.0;
-            YB[row][col] = 0.0;
-            for (int j = 0; j < n; j++) {
-                YR[row][col] += r->Psinv[i][j]*RecR[j];
-                YG[row][col] += r->Psinv[i][j]*RecG[j];
-                YB[row][col] += r->Psinv[i][j]*RecB[j];
-            }
-            YR[row][col] = int(YR[row][col] + 0.5);
-            YG[row][col] = int(YG[row][col] + 0.5);
-            YB[row][col] = int(YB[row][col] + 0.5);
-        }
+        make_Ys(n, blockBits, blockMask, r->Psinv, RecR, RecG, RecB, YR, YG, YB);
         r->R.setBlock(block, YR, YG, YB);
 
 
         cerr << "*** BLOCK " << block << " DONE!" << endl;
         if (r->listener != NULL)
-			r->listener->blockCompleted(block, YR, YG, YB);
+            r->listener->blockCompleted(block, YR, YG, YB);
 
     }
-    
-	// Clean up
-    delete[] bR;
-    delete[] bG;
-    delete[] bB;
-    delete[] RecR;
-    delete[] RecG;
-    delete[] RecB;
     
     pthread_exit(NULL);
 }
@@ -197,8 +182,6 @@ void Reconstructor::reconstruct() {
             break;
         }
 
-		GRBEnv* grbenv = new GRBEnv();
-		DantzigSelector::env = grbenv;
 		
         cout << "Starting " << m_nthreads << " threads..." << endl;
         running = true;
@@ -213,7 +196,6 @@ void Reconstructor::reconstruct() {
         }
         delete[] threads;
 
-		delete grbenv;
 
         T.save("1-transformed", yuv);
         R.save("2-reconstructed", yuv);

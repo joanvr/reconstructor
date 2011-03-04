@@ -15,23 +15,17 @@ INCLUDEPATH = ../core
 OBJECTS_DIR = ../build
 SOURCES += cli.cpp \
     ../core/Transforms.cpp \
-    ../core/Matrix.cpp \
     ../core/io.cpp \
     ../core/Image.cpp \
-    ../core/Dantzig.cpp \
     ../core/Reconstructor.cpp
 HEADERS += \
     ../core/Transforms.h \
-    ../core/Matrix.h \
+    ../core/datatypes.h \
     ../core/io.h \
     ../core/Image.h \
-    ../core/Dantzig.h \
+    ../core/Fista.h \
     ../core/Reconstructor.h \
-    ../core/ReconstructorListener.h \
-    ../core/gurobi_c++.h \
-    ../core/gurobi_c.h
-LIBS += -Wl,-V -L$(GUROBI_HOME)/lib/ \
-    -lgurobi_c++ \
-    -lgurobi40 \
+    ../core/ReconstructorListener.h 
+LIBS += -Wl,-V  \
     -lpthread \
     -lm

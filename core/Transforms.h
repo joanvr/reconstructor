@@ -1,7 +1,7 @@
 #ifndef _INVERSE_TRANSFORMS_H_
 #define _INVERSE_TRANSFORMS_H_
 
-#include "Matrix.h"
+#include "datatypes.h"
 
 void getRandomOnes     (Matrix& Psiinv, int seed);
 void getRandomZeroOnes (Matrix& Psiinv, int seed);
